@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusTik - Quản lý thời gian TikTok</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f7f7ff,#eef7ff);color:#202124;min-height:100vh}
+.container{max-width:1050px;margin:auto;padding:28px 18px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.logo{font-size:28px;font-weight:800;color:#111}
+.logo span{color:#ff2d55}
+.subtitle{color:#70757a;font-size:14px;margin-top:5px}
+.badge{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:9px 14px;font-size:13px}
+.hero{background:#111827;color:white;border-radius:25px;padding:30px;display:grid;grid-template-columns:1.2fr .8fr;gap:25px;box-shadow:0 15px 35px #11182718}
+.hero h1{font-size:34px;margin-bottom:12px}
+.hero p{color:#cbd5e1;line-height:1.6}
+.timer{display:flex;align-items:center;justify-content:center;flex-direction:column}
+.circle{width:190px;height:190px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(#ff2d55 var(--progress),#374151 0);position:relative}
+.circle:after{content:"";position:absolute;inset:10px;background:#111827;border-radius:50%}
+.time{position:relative;z-index:2;text-align:center}
+.time strong{display:block;font-size:38px}
+.time small{color:#9ca3af}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}
+.card{background:#fff;border:1px solid #e7e9ee;border-radius:20px;padding:22px;box-shadow:0 8px 25px #00000008}
+.card h3{font-size:17px;margin-bottom:15px}
+.stat{font-size:30px;font-weight:800}
+.muted{color:#737780;font-size:13px;margin-top:6px}
+.progress{height:12px;background:#eceef2;border-radius:10px;overflow:hidden;margin:14px 0}
+.progress div{height:100%;background:linear-gradient(90deg,#ff2d55,#ff6b8a);border-radius:10px;width:0;transition:.3s}
+.controls{display:flex;gap:10px;flex-wrap:wrap}
+button{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer}
+.primary{background:#ff2d55;color:white}
+.secondary{background:#eef0f4;color:#222}
+input{width:100%;padding:12px;border:1px solid #dfe2e8;border-radius:11px;margin:8px 0 12px;font-size:15px}
+.notice{margin-top:18px;padding:14px 16px;border-radius:14px;background:#fff5f7;color:#9f1239;border:1px solid #ffd4dd;display:none}
+.history{display:flex;align-items:end;gap:12px;height:145px;margin-top:18px}
+.bar-wrap{flex:1;text-align:center;font-size:11px;color:#777}
+.bar{height:105px;display:flex;align-items:end;justify-content:center}
+.bar i{display:block;width:70%;max-width:34px;background:linear-gradient(#ff2d55,#ff9ab0);border-radius:7px 7px 2px 2px;min-height:5px}
+.tip{line-height:1.65;color:#555;font-size:14px}
+footer{text-align:center;color:#888;font-size:12px;margin:28px 0 8px}
+@media(max-width:760px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.hero h1{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div>
+    <div class="logo">Focus<span>Tik</span></div>
+    <div class="subtitle">Quản lý thời gian sử dụng video ngắn</div>
+  </div>
+  <div class="badge" id="date"></div>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Kiểm soát thời gian, tập trung tốt hơn.</h1>
+    <p>Đặt giới hạn sử dụng TikTok mỗi ngày và theo dõi thói quen của bạn. Mục tiêu không phải là bỏ hoàn toàn, mà là sử dụng có chủ đích.</p>
+    <div class="controls" style="margin-top:22px">
+      <button class="primary" onclick="startTimer()">▶ Bắt đầu phiên</button>
+      <button class="secondary" onclick="pauseTimer()">⏸ Tạm dừng</button>
+      <button class="secondary" onclick="resetToday()">↺ Đặt lại hôm nay</button>
+    </div>
+  </div>
+  <div class="timer">
+    <div class="circle" id="circle" style="--progress:0deg">
+      <div class="time"><strong id="timer">00:00</strong><small>đã sử dụng hôm nay</small></div>
+    </div>
+  </div>
+</section>
+
+<div class="grid">
+  <div class="card">
+    <h3>⏱ Giới hạn mỗi ngày</h3>
+    <input id="limit" type="number" min="5" max="600" value="60">
+    <div class="muted">phút / ngày</div>
+    <button class="primary" style="margin-top:8px" onclick="saveLimit()">Lưu giới hạn</button>
+  </div>
+
+  <div class="card">
+    <h3>📊 Hôm nay</h3>
+    <div class="stat" id="todayText">0 phút</div>
+    <div class="muted" id="remaining">Còn 60 phút</div>
+    <div class="progress"><div id="progress"></div></div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 Mục tiêu</h3>
+    <div class="stat" id="goal">Trong giới hạn</div>
+    <div class="muted">Hãy cố gắng duy trì thói quen ổn định.</div>
+  </div>
+</div>
+
+<div class="notice" id="notice"></div>
+
+<div class="grid">
+  <div class="card" style="grid-column:span 2">
+    <h3>📅 Thống kê 7 ngày gần nhất</h3>
+    <div class="history" id="history"></div>
+  </div>
+
+  <div class="card">
+    <h3>🧠 Mẹo tập trung</h3>
+    <div class="tip">
+      • Tắt thông báo không cần thiết.<br>
+      • Đặt giới hạn trước khi bắt đầu xem.<br>
+      • Nghỉ mắt sau một khoảng thời gian.<br>
+      • Khi học, để điện thoại xa tầm tay.<br>
+      • Ưu tiên việc quan trọng trước giải trí.
+    </div>
+  </div>
+</div>
+
+<footer>FocusTik • Công cụ theo dõi thời gian cá nhân trên trình duyệt</footer>
+</div>
+
+<script>
+const KEY="focustik_data";
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{limit:60,today:0,lastDate:"",history:{}};
+let running=false,timerId=null,lastTick=Date.now();
+
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function init(){
+  const d=todayKey();
+  if(data.lastDate!==d){data.lastDate=d;data.today=0}
+  document.getElementById("limit").value=data.limit;
+  document.getElementById("date").textContent=new Date().toLocaleDateString("vi-VN",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+  render(); save();
+}
+function render(){
+  const mins=Math.floor(data.today/60), secs=data.today%60;
+  document.getElementById("timer").textContent=String(mins).padStart(2,"0")+":"+String(secs).padStart(2,"0");
+  document.getElementById("todayText").textContent=mins+" phút";
+  const left=Math.max(0,data.limit-mins);
+  document.getElementById("remaining").textContent=left+" phút còn lại";
+  const pct=Math.min(100,(data.today/60/data.limit)*100);
+  document.getElementById("progress").style.width=pct+"%";
+  document.getElementById("circle").style.setProperty("--progress",(pct*3.6)+"deg");
+  document.getElementById("goal").textContent=pct>=100?"Đã vượt giới hạn":pct>=80?"Sắp đạt giới hạn":"Trong giới hạn";
+  const notice=document.getElementById("notice");
+  if(pct>=100){notice.style.display="block";notice.textContent="⚠️ Bạn đã đạt giới hạn hôm nay. Hãy cân nhắc dừng phiên và chuyển sang một hoạt động khác."}
+  else if(pct>=80){notice.style.display="block";notice.textContent="🔔 Bạn đã sử dụng hơn 80% thời gian cho phép hôm nay."}
+  else notice.style.display="none";
+  renderHistory();
+}
+function startTimer(){
+  if(running)return;
+  running=true;lastTick=Date.now();
+  timerId=setInterval(()=>{
+    const now=Date.now(), diff=Math.floor((now-lastTick)/1000);
+    if(diff>0){data.today+=diff;lastTick=now;data.history[todayKey()]=data.today;save();render()}
+    if(data.today>=data.limit*60) pauseTimer();
+  },500);
+}
+function pauseTimer(){running=false;clearInterval(timerId);save();render()}
+function resetToday(){
+  if(confirm("Đặt lại thời gian hôm nay về 0?")){
+    data.today=0;data.history[todayKey()]=0;save();render();
+  }
+}
+function saveLimit(){
+  const v=Math.max(5,Math.min(600,Number(document.getElementById("limit").value)||60));
+  data.limit=v;save();render();
+}
+function renderHistory(){
+  const box=document.getElementById("history");box.innerHTML="";
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    const sec=(key===todayKey()?data.today:(data.history[key]||0));
+    const mins=Math.floor(sec/60);
+    const h=Math.min(105,Math.max(5,(mins/Math.max(data.limit,1))*105));
+    const w=document.createElement("div");w.className="bar-wrap";
+    w.innerHTML='<div class="bar"><i style="height:'+h+'px"></i></div><div>'+d.toLocaleDateString("vi-VN",{weekday:"short"}).replace(".","")+'</div><div>'+mins+'p</div>';
+    box.appendChild(w);
+  }
+}
+init();
+</script>
+</body>
+</html>
